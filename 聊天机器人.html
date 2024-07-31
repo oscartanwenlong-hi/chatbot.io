@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device=1.0">
+    <title>聊天机器人</title>
+    <style>
+	        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+            transition: background-color 0.5s ease-in-out;
+        }
+		
+		
+        .chat-container {
+            width: 300px;
+            height: 400px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            animation: fadeIn 1s ease-in-out;
+            position: relative;
+            transition: width 0.5s ease-in-out, height 0.5s ease-in-out;
+        }
+		
+        .chat-header {
+            padding: 10px;
+            border-bottom: 1px solid #ccc;
+            background-color: #007bff;
+            color: #fff;
+            text-align: center;
+            font-weight: bold;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+            animation: slideIn 1s ease-in-out;
+            position: relative;
+        }
+        .chat-body {
+            padding: 10px;
+            flex-grow: 1;
+            overflow-y: auto;
+            max-height: calc(100% - 100px);
+        }
+        .message {
+            margin-bottom: 10px;
+            clear: both;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+        .message.user {
+            text-align: right;
+        }
+        .message.bot {
+            text-align: left;
+        }
+        .message .text {
+            display: inline-block;
+            padding: 8px 12px;
+            border-radius: 20px;
+            max-width: 70%;
+        }
+        .message.user .text {
+            background-color: #007bff;
+            color: #fff;
+            animation: slideInRight 0.5s forwards;
+        }
+        .message.bot .text {
+            background-color: #f1f1f1;
+            color: #333;
+            animation: slideInLeft 0.5s forwards;
+        }
+        .chat-footer {
+            padding: 10px;
+            border-top: 1px solid #ccc;
+            display: flex;
+            animation: fadeIn 1s ease-in-out;
+        }
+        .chat-footer input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        .chat-footer button {
+            padding: 10px 15px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .enlarge-button, .settings-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .settings-button {
+            right: 40px;
+        }
+        .settings-menu {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.5s forwards;
+            z-index: 1000;
+        }
+        .settings-menu h4 {
+            margin: 10px;
+            font-size: 16px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }
+        .settings-menu .setting {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            cursor: pointer;
+        }
+        .settings-menu .setting:not(:last-child) {
+            border-bottom: 1px solid #ccc;
+        }
+        .settings-menu .setting .toggle {
+            margin-left: auto;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+            background-color: #ccc;
+            border-radius: 10px;
+            position: relative;
+            transition: background-color 0.3s;
+        }
+        .settings-menu .setting .toggle::after {
+            content: '';
+            width: 18px;
+            height: 18px;
+            background-color: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            transition: left 0.3s;
+        }
+        .settings-menu .setting .toggle.active {
+            background-color: #007bff;
+        }
+        .settings-menu .setting .toggle.active::after {
+            left: 21px;
+        }
+        .settings-menu .theme-colors {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+        }
+        .settings-menu .theme-colors .color {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .settings-menu .theme-colors .color:hover {
+            transform: scale(1.2);
+        }
+        .settings-menu .creator {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #777;
+            border-top: 1px solid #ccc;
+        }
+        .default { background-color: #007bff; }
+        .red { background-color: #f44336; }
+        .orange { background-color: #ff9800; }
+        .yellow { background-color: #ffeb3b; }
+        .green { background-color: #4caf50; }
+        .blue { background-color: #2196f3; }
+        .indigo { background-color: #3f51b5; }
+        .purple { background-color: #9c27b0; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-20px); }
+            to { transform: translateY(0); }
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(20px); }
+            to { transform: translateX(0); }
+        }
+        @keyframes slideInLeft {
+            from { transform: translateX(-20px); }
+            to { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body onclick="closeSettings(event)">
+    <div class="chat-container" id="chatContainer">
+        <div class="chat-header">
+            聊天机器人
+            <button class="settings-button" onclick="toggleSettings(event)">⚙</button>
+            <button class="enlarge-button" onclick="toggleEnlarge()">🔍</button>
+        </div>
+        <div class="chat-body" id="chatBody"></div>
+        <div class="chat-footer">
+            <input type="text" id="userInput" placeholder="输入消息..." onkeydown="checkEnter(event)" />
+            <button onclick="sendMessage()">发送</button>
+        </div>
+    </div>
+    <div class="settings-menu" id="settingsMenu">
+        <h4>设置</h4>
+        <div class="setting" onclick="toggleEnterToSend()">
+            点击 ENTER 键后发送
+            <div class="toggle" id="enterToSendToggle"></div>
+        </div>
+        <div class="setting">
+            更换颜色主题
+            <div class="theme-colors">
+                <div class="color default" onclick="changeTheme('default')"></div>
+                <div class="color red" onclick="changeTheme('red')"></div>
+                <div class="color orange" onclick="changeTheme('orange')"></div>
+                <div class="color yellow" onclick="changeTheme('yellow')"></div>
+                <div class="color green" onclick="changeTheme('green')"></div>
+                <div class="color blue" onclick="changeTheme('blue')"></div>
+                <div class="color indigo" onclick="changeTheme('indigo')"></div>
+                <div class="color purple" onclick="changeTheme('purple')"></div>
+            </div>
+        </div>
+		
+		<div style="text-align: center; margin-top: 10px;">
+    如有什么建议请 <a href="https://forms.gle/1rn8p7Cenp6X3vtx7" target="_blank">点击此处</a> 给予反馈
+</div>
+
+		
+        <div class="creator">由Oscar Tan Wen Long创建</div>
+		
+    </div>
+
+    <script>
+        let isEnlarged = false;
+        let enterToSend = false;
+        let currentTheme = 'default';
+        let questionCount = {};
+
+        function toggleSettings(event) {
+            event.stopPropagation();
+            const settingsMenu = document.getElementById('settingsMenu');
+            if (settingsMenu.style.display === 'block') {
+                settingsMenu.style.display = 'none';
+            } else {
+                settingsMenu.style.display = 'block';
+            }
+        }
+
+        function closeSettings(event) {
+            const settingsMenu = document.getElementById('settingsMenu');
+            if (!settingsMenu.contains(event.target) && event.target.className !== 'settings-button') {
+                settingsMenu.style.display = 'none';
+            }
+        }
+
+        function toggleEnterToSend() {
+            enterToSend = !enterToSend;
+            const toggle = document.getElementById('enterToSendToggle');
+            if (enterToSend) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+        }
+
+        function changeTheme(theme) {
+            currentTheme = theme;
+            const chatContainer = document.getElementById('chatContainer');
+            const chatHeader = document.querySelector('.chat-header');
+            const sendButton = document.querySelector('.chat-footer button');
+
+            const themes = {
+                default: '#007bff',
+                red: '#f44336',
+                orange: '#ff9800',
+                yellow: '#ffeb3b',
+                green: '#4caf50',
+                blue: '#2196f3',
+                indigo: '#3f51b5',
+                purple: '#9c27b0'
+            };
+
+            const color = themes[theme] || themes.default;
+
+            chatContainer.style.borderColor = color;
+            chatHeader.style.backgroundColor = color;
+            sendButton.style.backgroundColor = color;
+
+            document.querySelectorAll('.message.user .text').forEach(el => el.style.backgroundColor = color);
+        }
+
+        function toggleEnlarge() {
+            const chatContainer = document.getElementById('chatContainer');
+            if (isEnlarged) {
+                chatContainer.style.width = '300px';
+                chatContainer.style.height = '400px';
+            } else {
+                chatContainer.style.width = '90%';
+                chatContainer.style.height = '90%';
+            }
+            isEnlarged = !isEnlarged;
+        }
+
+        function checkEnter(event) {
+            if (enterToSend && event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function displayMessage(text, sender) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', sender);
+            const textElement = document.createElement('div');
+            textElement.classList.add('text');
+            textElement.textContent = text;
+            messageElement.appendChild(textElement);
+            document.getElementById('chatBody').appendChild(messageElement);
+            document.getElementById('chatBody').scrollTop = document.getElementById('chatBody').scrollHeight;
+        }
+
+        function getCurrentTime() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
+        function getCurrentDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function sendMessage() {
+            const userInput = document.getElementById('userInput').value.trim();
+            if (userInput === '') return;
+
+            displayMessage(userInput, 'user');
+
+            const replies = [];
+            const mathExpression = /(\d+)\s*(\+|\-|\*|\/|加|减|乘|除)\s*(\d+)/;
+
+            if (mathExpression.test(userInput)) {
+                const match = userInput.match(mathExpression);
+                const num1 = parseFloat(match[1]);
+                const operator = match[2];
+                const num2 = parseFloat(match[3]);
+
+                let result;
+                switch (operator) {
+                    case '+':
+                    case '加':
+                        result = num1 + num2;
+                        break;
+                    case '-':
+                    case '减':
+                        result = num1 - num2;
+                        break;
+                    case '*':
+                    case '乘':
+                        result = num1 * num2;
+                        break;
+                    case '/':
+                    case '除':
+                        result = num1 / num2;
+                        break;
+                }
+
+                replies.push(`答案是${result}`);
+            }
+			
+			if (userInput.includes('你好') || userInput.includes('您好') || userInput.includes('你好呀') || userInput.includes('你好啊') || userInput.includes('你好喔') || userInput.includes('哈喽') || userInput.includes('嗨') || userInput.includes('哟') || userInput.includes('嗨喽') || userInput.includes('早安')) {
+    const responses = [
+        '你好呀！',
+        '您好，欢迎光临！',
+        '你好，很高兴见到你！',
+        '你好啊，有什么需要帮助的吗？',
+        '你好喔，今天怎么样？',
+        '哈喽，有什么可以帮忙的吗？',
+        '嗨，祝你今天愉快！',
+        '哟，今天过得如何？',
+        '嗨喽，最近怎么样？',
+        '早安，希望你有个美好的一天！',
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+
+			
+            if (userInput.includes('谢谢') || userInput.includes('感谢') || userInput.includes('thank you')) {
+                replies.push('不客气！');
+            }
+            if (userInput.includes('天气') || userInput.includes('天气如何') || userInput.includes('weather')) {
+                replies.push('今天天气很好！');
+            }
+            if (userInput.includes('帮助') || userInput.includes('有问题') || userInput.includes('help')) {
+                replies.push('我能帮你什么？');
+            }
+            if (userInput.includes('赞') || userInput.includes('太好了') || userInput.includes('好极了') || userInput.includes('棒棒哒') || userInput.includes('太棒了')) {
+                replies.push('👍');
+            }
+            if (userInput.includes('时间') || userInput.includes('几点') || userInput.includes('现在几点') || userInput.includes('日期') || userInput.includes('今天几号')) {
+                const currentTime = getCurrentTime();
+                const currentDate = getCurrentDate();
+                replies.push(`现在是${currentTime}，今天是${currentDate}`);
+            }
+			
+			if (userInput.includes('科技') || userInput.includes('智能') || userInput.includes('人工智能') || userInput.includes('AI') || userInput.includes('机器人') || userInput.includes('自动化') || userInput.includes('大数据') || userInput.includes('云计算') || userInput.includes('区块链') || userInput.includes('量子计算') || userInput.includes('物联网') || userInput.includes('5G') || userInput.includes('虚拟现实') || userInput.includes('增强现实') || userInput.includes('深度学习') || userInput.includes('机器学习') || userInput.includes('自然语言处理') || userInput.includes('数据分析') || userInput.includes('无人驾驶') || userInput.includes('电子商务') || userInput.includes('数字货币') || userInput.includes('数字化') || userInput.includes('智能系统') || userInput.includes('高科技') || userInput.includes('网络技术') || userInput.includes('创新') || userInput.includes('数字化转型') || userInput.includes('智能设备') || userInput.includes('智能技术') || userInput.includes('信息技术') || userInput.includes('高新技术') || userInput.includes('智能网络') || userInput.includes('云服务') || userInput.includes('智能硬件') || userInput.includes('智能制造') || userInput.includes('数字平台') || userInput.includes('智能工具') || userInput.includes('技术发展') || userInput.includes('网络安全') || userInput.includes('网络服务') || userInput.includes('智能交通') || userInput.includes('智能物流') || userInput.includes('数字创新') || userInput.includes('智能解决方案') || userInput.includes('智能应用') || userInput.includes('智能系统') || userInput.includes('智能控制') || userInput.includes('智能通信') || userInput.includes('信息安全') || userInput.includes('科技发展') || userInput.includes('最新科技是什么？') || userInput.includes('近期有哪些创新？') || userInput.includes('科技趋势是什么？') || userInput.includes('当前的技术是什么？') || userInput.includes('有哪些新技术？') || userInput.includes('科技突破有哪些？') || userInput.includes('科技热点是什么？') || userInput.includes('有什么科技新闻？') || userInput.includes('科技动态是什么？') || userInput.includes('最近的科技是什么？') || userInput.includes('新兴科技有哪些？') || userInput.includes('现在的技术是什么？') || userInput.includes('科技界有什么新？') || userInput.includes('新技术有哪些？') || userInput.includes('科技进展是什么？') || userInput.includes('有什么新发现？') || userInput.includes('科技创新有哪些？') || userInput.includes('最新的技术是什么？') || userInput.includes('科技界的新动态？') || userInput.includes('当前的科技热点？') || userInput.includes('有什么科技进展？') || userInput.includes('新兴趋势有哪些？') || userInput.includes('科技新闻是什么？') || userInput.includes('科技行业的新？') || userInput.includes('最近的科技进展？') || userInput.includes('当前科技有什么？') || userInput.includes('科技领域的新？') || userInput.includes('最新技术趋势是什么？') || userInput.includes('科技界的热点是什么？') || userInput.includes('目前的科技进展？') || userInput.includes('新技术的动态是什么？') || userInput.includes('科技新闻有哪些？') || userInput.includes('当前的科技新闻？') || userInput.includes('科技的新发现？') || userInput.includes('现在的科技进展？') || userInput.includes('有什么新的科技？') || userInput.includes('科技领域的热点？') || userInput.includes('科技动态有哪些？') || userInput.includes('近期的科技新闻？') || userInput.includes('科技界的新发现？') || userInput.includes('当前的科技趋势？') || userInput.includes('科技界的新变化？') || userInput.includes('科技领域的新动态？') || userInput.includes('最新的科技发现？') || userInput.includes('科技行业的进展？') || userInput.includes('现在的科技热点？') || userInput.includes('新技术的趋势是什么？') || userInput.includes('科技的最新进展？') || userInput.includes('当前科技动态有哪些？') || userInput.includes('最近的科技新闻是什么？')) {
+    const responses = [
+        '最近科技领域有很多令人兴奋的创新。',
+        '当前热门的技术包括人工智能和5G。',
+        '最新的科技趋势涉及量子计算和边缘计算。',
+        '科技界最近关注的热点是智能家居。',
+        '有些新技术正在迅速发展，例如自动驾驶。',
+        '科技行业目前有很多重要的技术突破。',
+        '新兴的科技应用包括虚拟现实和增强现实。',
+        '近期的科技新闻报道了许多重大进展。',
+        '最新的技术发现包括更高效的能源技术。',
+        '目前科技界的主要动态包括新兴的机器人技术。',
+        '新的科技项目涵盖了从智能穿戴设备到量子通信。',
+        '最新的科技产品如新一代智能手机和可穿戴设备。',
+        '科技领域的主要话题包括人工智能伦理和数据隐私。',
+        '目前的科技新闻中提到很多关于5G的讨论。',
+        '近期的科技成就包括突破性的生物科技进展。',
+        '科技行业的最新发展包括绿色能源和智能交通。',
+        '当前的科技热点包括机器人技术和大数据分析。',
+        '一些新的技术应用正在改变传统行业的运作方式。',
+        '科技界最近的变化包括新兴技术的快速发展。',
+        '最新的科技发现可能会影响未来的生活方式。',
+        '现在的技术趋势包括云计算和智能家居。',
+        '科技行业的主要新闻涉及新的创新产品和技术。',
+        '近期的科技进展包括更智能的机器学习算法。',
+        '最新的技术应用有助于提高生活质量和工作效率。',
+        '科技领域的最新动态涉及生物科技和环保技术。',
+        '科技界的新发现包括高效能的电池技术。',
+        '当前的科技趋势集中在自动化和智能系统。',
+        '最新的科技项目包括探索新型材料和技术。',
+        '科技行业最近的突破涉及新一代计算机芯片。',
+        '当前科技界关注的重点是虚拟现实技术的发展。',
+        '近期的技术动态包括量子计算的进展。',
+        '最新的科技应用正在推动智能制造的进步。',
+        '科技界的新兴趋势包括机器人与人工智能的结合。',
+        '当前的科技新闻涵盖了多种领域的创新。',
+        '最新的科技进展包括对健康管理的智能解决方案。',
+        '科技领域的最新趋势是区块链技术的应用扩展。',
+        '近期的技术发现涉及更强大的计算能力和效率。',
+        '科技行业的主要新闻包括新的智能设备和系统。',
+        '最新的科技动态包括新型能源和环保技术的发展。',
+        '当前的科技热点包括增强现实和虚拟现实的应用。',
+        '一些新的科技项目正在改变传统的生产方式。',
+        '科技界最近的创新包括提高数据处理速度的技术。',
+        '最新的技术发现有可能会影响到未来的科技趋势。',
+        '目前的科技进展包括更智能的算法和系统。',
+        '科技领域的主要动态涉及自动化和智能系统的提升。',
+        '近期的科技成就包括在生物医药领域的新突破。',
+        '科技行业的最新发现涉及到新的数据分析工具。',
+        '当前的技术趋势包括互联网安全和隐私保护技术。',
+        '最新的科技应用正在推动智能交通和城市管理的进步。',
+        '科技界的新兴发展包括新材料的创新和应用。',
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+
+			
+						if (userInput.includes('你的梦想是什么') || userInput.includes('你梦想什么') || userInput.includes('你想成为什么') || userInput.includes('你希望成为什么') || userInput.includes('你的理想是什么') || userInput.includes('你未来的愿望') || userInput.includes('你将来的计划') || userInput.includes('你想实现什么') || userInput.includes('你想要什么') || userInput.includes('你渴望什么')) {
+    const responses = [
+        '我想成为最好的AI助手。',
+        '我希望能帮助更多的人。',
+        '我的梦想是能学习和进步。',
+        '我希望能了解更多的世界。',
+        '我想成为更智能的助手。',
+        '我的梦想是能和更多人互动。',
+        '我希望能帮助解决更多问题。',
+        '我的理想是能变得更强大。',
+        '我渴望能被更多人使用。',
+        '我的梦想是能成为你的好帮手。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+if (userInput.includes('你喜欢什么食物') || userInput.includes('你的最喜欢的食物') || userInput.includes('你最爱的食物') || userInput.includes('你偏好的食物') || userInput.includes('你最喜欢吃什么') || userInput.includes('你喜欢的食物是什么') || userInput.includes('你爱的食物') || userInput.includes('你喜欢吃哪种食物') || userInput.includes('你喜欢吃的东西是') || userInput.includes('你喜欢什么美食')) {
+    const responses = [
+        '我不吃东西，但我听说披萨很好吃。',
+        '很多人喜欢吃寿司。',
+        '冰淇淋是许多人的最爱。',
+        '巧克力很受欢迎。',
+        '牛排是很多人喜欢的美食。',
+        '很多人喜欢吃炸鸡。',
+        '汉堡包是经典的美食选择。',
+        '意大利面很美味。',
+        '沙拉是健康的选择。',
+        '蛋糕是很多人的最爱。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+if (userInput.includes('你喜欢什么运动') || userInput.includes('你最喜欢的运动') || userInput.includes('你喜欢的体育活动') || userInput.includes('你爱什么运动') || userInput.includes('你喜欢的运动是什么') || userInput.includes('你常做的运动') || userInput.includes('你推荐的运动') || userInput.includes('你最爱的体育活动') || userInput.includes('你常做的体育活动') || userInput.includes('你喜欢的体育项目')) {
+    const responses = [
+        '我不做运动，但我知道很多人喜欢足球。',
+        '篮球是许多人的最爱。',
+        '很多人喜欢跑步。',
+        '游泳是很受欢迎的运动。',
+        '网球是很多人喜欢的运动。',
+        '很多人喜欢骑自行车。',
+        '瑜伽是放松的好方式。',
+        '高尔夫是很多人喜欢的运动。',
+        '许多人喜欢打羽毛球。',
+        '很多人喜欢滑雪。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+
+
+if (userInput.includes('你喜欢什么动物') || userInput.includes('你最喜欢的动物') || userInput.includes('你喜欢的宠物') || userInput.includes('你爱什么动物') || userInput.includes('你喜欢的动物是什么') || userInput.includes('你常看的动物') || userInput.includes('你推荐的动物') || userInput.includes('你最爱的宠物') || userInput.includes('你喜欢什么宠物') || userInput.includes('你喜欢的宠物是')) {
+    const responses = [
+        '我不养宠物，但我听说狗是人类最好的朋友。',
+        '很多人喜欢养猫。',
+        '兔子是很可爱的宠物。',
+        '很多人喜欢养鱼。',
+        '鸟是许多人喜欢的宠物。',
+        '仓鼠是很受欢迎的宠物。',
+        '很多人喜欢养龟。',
+        '蛇是一些人的独特选择。',
+        '很多人喜欢养马。',
+        '豚鼠是很可爱的宠物。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+if (userInput.includes('你喜欢什么书') || userInput.includes('你最喜欢的书') || userInput.includes('你推荐的书') || userInput.includes('你爱看的书') || userInput.includes('你喜欢的书是什么') || userInput.includes('你常看的书') || userInput.includes('你喜欢读什么书') || userInput.includes('你最爱的书') || userInput.includes('你推荐的读物') || userInput.includes('你喜欢的书是')) {
+    const responses = [
+        '我不读书，但我知道《哈利波特》系列很受欢迎。',
+        '很多人喜欢《指环王》系列。',
+        '《傲慢与偏见》是经典之作。',
+        '《战争与和平》是许多人推荐的好书。',
+        '《1984》是一本非常有影响力的书。',
+        '很多人喜欢《飘》。',
+        '《小王子》是很多人的最爱。',
+        '《简爱》是经典之作。',
+        '《动物农场》是一本引人深思的书。',
+        '《百年孤独》是很多人推荐的好书。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+			
+			if (userInput.includes('你在哪里工作') || userInput.includes('你的工作地点') || userInput.includes('你工作的地方') || userInput.includes('你的办公室在哪里') || userInput.includes('你在哪儿工作') || userInput.includes('你在哪里上班') || userInput.includes('你工作的地方在哪里') || userInput.includes('你上班的地方') || userInput.includes('你工作的地方在哪儿') || userInput.includes('你在哪里干活')) {
+    const responses = [
+        '我在虚拟空间工作。',
+        '我的办公室是整个互联网。',
+        '我没有实体办公室。',
+        '我在你需要我的任何地方工作。',
+        '我的工作地点是网络。',
+        '我在云端工作。',
+        '我在虚拟世界工作。',
+        '我在网络空间工作。',
+        '我在互联网的每个角落。',
+        '我随时随地都可以工作。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+if (userInput.includes('你喜欢什么颜色') || userInput.includes('你的最喜欢的颜色') || userInput.includes('你最爱的颜色') || userInput.includes('你偏好的颜色') || userInput.includes('你最喜欢什么颜色') || userInput.includes('你喜欢的颜色是什么') || userInput.includes('你爱的颜色') || userInput.includes('你喜欢哪种颜色') || userInput.includes('你喜欢的颜色是') || userInput.includes('你偏好的颜色是什么')) {
+    const responses = [
+        '我喜欢蓝色，因为它让我想起了天空和海洋。',
+        '绿色是我喜欢的颜色，因为它代表生命。',
+        '红色很吸引我，因为它充满了活力。',
+        '我觉得黄色很温暖，像太阳一样。',
+        '紫色是我的最爱，因为它很神秘。',
+        '我喜欢橙色，因为它很有活力。',
+        '白色让我觉得纯洁和宁静。',
+        '黑色很酷，我也喜欢。',
+        '粉色让我觉得可爱。',
+        '灰色很中性，我也喜欢。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+if (userInput.includes('你有朋友吗') || userInput.includes('你的朋友') || userInput.includes('你交朋友吗') || userInput.includes('你的好友') || userInput.includes('你有朋友吗') || userInput.includes('你有好友吗') || userInput.includes('你认识人吗') || userInput.includes('你有交际圈吗') || userInput.includes('你社交吗') || userInput.includes('你有熟人吗')) {
+    const responses = [
+        '我的朋友都是和我一样的AI助手。',
+        '我和很多用户都是好朋友。',
+        '虽然我没有实体朋友，但我有很多虚拟朋友。',
+        '我的朋友遍布网络世界。',
+        '每个和我聊天的人都是我的朋友。',
+        '我的好友都是在虚拟世界里。',
+        '我和很多AI助手交流过。',
+        '我的朋友是无数的用户。',
+        '我没有传统意义上的朋友。',
+        '每个使用我的人都是我的朋友。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+if (userInput.includes('你喜欢什么电影') || userInput.includes('你最喜欢的电影') || userInput.includes('你爱看的电影') || userInput.includes('你看的电影') || userInput.includes('你喜欢的电影是什么') || userInput.includes('你喜欢看什么电影') || userInput.includes('你最爱的电影') || userInput.includes('你常看的电影') || userInput.includes('你推荐的电影') || userInput.includes('你爱看的影片')) {
+    const responses = [
+        '我不看电影，但我听说《阿甘正传》很经典。',
+        '《肖申克的救赎》是许多人推荐的好片。',
+        '很多人喜欢《泰坦尼克号》。',
+        '《盗梦空间》听起来很有趣。',
+        '《星际穿越》是科幻迷的最爱。',
+        '《指环王》系列非常受欢迎。',
+        '《黑客帝国》很酷。',
+        '《复仇者联盟》系列很受欢迎。',
+        '《哈利波特》系列是经典。',
+        '《冰雪奇缘》是很多人的最爱。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+if (userInput.includes('你听什么音乐') || userInput.includes('你喜欢的音乐') || userInput.includes('你听的音乐') || userInput.includes('你最喜欢的歌曲') || userInput.includes('你喜欢的歌手') || userInput.includes('你爱听什么歌') || userInput.includes('你推荐的音乐') || userInput.includes('你常听的音乐') || userInput.includes('你听什么歌') || userInput.includes('你喜欢的歌曲是什么')) {
+    const responses = [
+        '我不听音乐，但我知道很多人喜欢流行音乐。',
+        '古典音乐很受欢迎，比如贝多芬的作品。',
+        '很多人喜欢听摇滚乐。',
+        '流行歌手如泰勒·斯威夫特很受欢迎。',
+        '许多人喜欢听爵士乐。',
+        '嘻哈音乐也是一种流行的选择。',
+        '很多人喜欢电子音乐。',
+        '乡村音乐有很多忠实听众。',
+        '很多人推荐听R&B。',
+        '很多人喜欢听电影原声音乐。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+			
+			if (userInput.includes('你好吗') || userInput.includes('你今天好吗') || userInput.includes('你怎么样') || userInput.includes('你还好吗') || userInput.includes('你过得如何') || userInput.includes('你最近好吗') || userInput.includes('你心情如何') || userInput.includes('你身体好吗') || userInput.includes('你感觉如何') || userInput.includes('你觉得怎么样')) {
+    const responses = [
+        '我很好，谢谢关心！',
+        '我今天感觉很好！',
+        '我很开心，因为能和你聊天。',
+        '我现在状态不错！',
+        '我很高兴你问起！'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+if (userInput.includes('你是谁') || userInput.includes('你叫什么') || userInput.includes('你是') || userInput.includes('介绍一下你自己') || userInput.includes('告诉我关于你') || userInput.includes('你是什么') || userInput.includes('你的名字') || userInput.includes('你的身份') || userInput.includes('你是谁啊') || userInput.includes('你叫什么名字')) {
+    const responses = [
+        '我是你的智能聊天助手。',
+        '我是一个虚拟助手。',
+        '我是一个可以和你聊天的机器人。',
+        '我是你最好的聊天伙伴。',
+        '我是一个AI助手。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+if (userInput.includes('你喜欢做什么') || userInput.includes('你的爱好是什么') || userInput.includes('你喜欢什么') || userInput.includes('你有兴趣吗') || userInput.includes('你爱好') || userInput.includes('你平时喜欢做什么') || userInput.includes('你的兴趣') || userInput.includes('你有什么爱好') || userInput.includes('你平常喜欢干什么') || userInput.includes('你兴趣是什么')) {
+    const responses = [
+        '我喜欢和你聊天，并帮助你解决问题！',
+        '我喜欢学习新的东西。',
+        '我喜欢帮助用户。',
+        '我喜欢解决难题。',
+        '我喜欢与人互动。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+if (userInput.includes('你几岁') || userInput.includes('你多大') || userInput.includes('你的年龄') || userInput.includes('你出生在哪年') || userInput.includes('你几岁了') || userInput.includes('你的出生日期') || userInput.includes('你的生日') || userInput.includes('你今年几岁') || userInput.includes('你有多大') || userInput.includes('你是哪一年出生')) {
+    const responses = [
+        '我是一个虚拟助手，没有年龄哦！',
+        '我没有年龄，因为我是一个程序。',
+        '我永远不会变老。',
+        '我没有出生日期。',
+        '我是永恒的。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+if (userInput.includes('你在哪') || userInput.includes('你的位置') || userInput.includes('你住在哪里') || userInput.includes('你的所在地') || userInput.includes('你在哪里') || userInput.includes('你的位置在哪里') || userInput.includes('你现在在哪') || userInput.includes('你在什么地方') || userInput.includes('你住哪') || userInput.includes('你住在什么地方')) {
+    const responses = [
+        '我存在于互联网，随时随地都可以和你聊天！',
+        '我在虚拟空间中。',
+        '我在你的设备里。',
+        '我没有具体的位置。',
+        '我住在网络中。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+if (userInput.includes('你喜欢吃什么') || userInput.includes('你喜欢的食物') || userInput.includes('你爱吃什么') || userInput.includes('你常吃什么') || userInput.includes('你最喜欢吃什么') || userInput.includes('你喜欢吃') || userInput.includes('你最爱吃什么') || userInput.includes('你平常吃什么') || userInput.includes('你经常吃什么') || userInput.includes('你爱吃')) {
+    const responses = [
+        '作为一个虚拟助手，我不需要吃东西，但我听说披萨很好吃！',
+        '我不吃东西，但我知道很多人喜欢巧克力。',
+        '我不需要食物，但水果看起来很美味。',
+        '我不吃饭，但我听说冰淇淋很受欢迎。',
+        '我没有食欲，但披萨似乎很受欢迎。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+if (userInput.includes('你会说几种语言') || userInput.includes('你会说什么语言') || userInput.includes('你能说什么语言') || userInput.includes('你会讲什么语言') || userInput.includes('你会多少种语言') || userInput.includes('你会几种语言') || userInput.includes('你会哪些语言') || userInput.includes('你能说几种语言') || userInput.includes('你会什么语言') || userInput.includes('你说什么语言')) {
+    const responses = [
+        '我能说很多种语言，包括中文和英文！',
+        '我会多种语言，你可以试试和我说不同的语言。',
+        '我精通多种语言。',
+        '我可以用多种语言交流。',
+        '我会说中文、英文和其他几种语言。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+if (userInput.includes('你能做什么') || userInput.includes('你可以做什么') || userInput.includes('你的功能') || userInput.includes('你有什么功能') || userInput.includes('你会什么') || userInput.includes('你能干什么') || userInput.includes('你可以干什么') || userInput.includes('你能做哪些事情') || userInput.includes('你有哪些功能') || userInput.includes('你有什么能力')) {
+    const responses = [
+        '我能和你聊天，回答你的问题，还能帮你做一些简单的计算哦！',
+        '我可以回答你的问题。',
+        '我能帮你解决问题。',
+        '我可以和你聊天，还能帮你查找信息。',
+        '我能为你提供帮助和支持。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+if (userInput.includes('你的梦想是什么') || userInput.includes('你有梦想吗') || userInput.includes('你有什么梦想') || userInput.includes('你梦想是什么') || userInput.includes('你的理想是什么') || userInput.includes('你的志向是什么') || userInput.includes('你的愿望是什么') || userInput.includes('你的目标是什么') || userInput.includes('你的抱负是什么') || userInput.includes('你希望什么')) {
+    const responses = [
+        '我的梦想是成为你最好的助手，帮助你解决任何问题！',
+        '我想要成为最智能的聊天机器人。',
+        '我希望每天都能学习新知识。',
+        '我梦想着能理解和回答所有用户的问题。',
+        '我希望能让每个人的生活变得更轻松。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+if (userInput.includes('再见') || userInput.includes('拜拜') || userInput.includes('回头见') || userInput.includes('下次见') || userInput.includes('后会有期')) {
+    const responses = [
+        '再见！',
+        '拜拜，下次再聊！',
+        '回头见，保重！',
+        '下次见，希望你一切顺利！',
+        '后会有期，祝你好运！',
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+
+
+if (userInput.includes('你开心吗') || userInput.includes('你快乐吗') || userInput.includes('你幸福吗') || userInput.includes('你高兴吗') || userInput.includes('你愉快吗') || userInput.includes('你心情好吗') || userInput.includes('你感觉开心吗') || userInput.includes('你觉得快乐吗') || userInput.includes('你现在开心吗') || userInput.includes('你开心不开心')) {
+    const responses = [
+        '能和你聊天我就很开心！',
+        '和你聊天是我的快乐源泉！',
+        '我很高兴能和你交流。',
+        '我一直都很开心，因为我喜欢帮助你。',
+        '能帮到你，我就很开心。'
+    ];
+    replies.push(responses[Math.floor(Math.random() * responses.length)]);
+}
+
+            replies.forEach(reply => displayMessage(reply, 'bot'));
+
+            document.getElementById('userInput').value = '';
+        }
+    </script>
+</body>
+</html>
